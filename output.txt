@@ -1,0 +1,9 @@
+---------------------------------------------------------------------------
+ImportError                               Traceback (most recent call last)
+Cell In [5], line 2
+      1 # Supported Games: https://github.com/mgbellemare/Arcade-Learning-Environment/blob/master/docs/games.md
+----> 2 from ale_py.roms import Breakout
+      3 from ale_py import ALEInterface, SDL_SUPPORT
+      5 ale = ALEInterface()
+
+ImportError: cannot import name 'Breakout' from 'ale_py.roms' (D:\python\python 3.10.8\lib\site-packages\ale_py\roms\__init__.py)
