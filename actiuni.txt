@@ -1,18 +1,30 @@
-Action.NOOP
-Action.FIRE
-Action.UP
-Action.RIGHT
-Action.LEFT
-Action.DOWN
-Action.UPRIGHT
-Action.UPLEFT
-Action.DOWNRIGHT
-Action.DOWNLEFT
-Action.UPFIRE
+0 -> Action.NOOP
+1 -> Action.FIRE
+2 -> Action.UP
+3 -> Action.RIGHT
+4 -> Action.LEFT
+5 -> Action.DOWN
+6 -> Action.UPRIGHT
+7 -> Action.UPLEFT
+8 -> Action.DOWNRIGHT
+9 -> Action.DOWNLEFT
+10 -> Action.UPFIRE
+11 -> Action.RIGHTFIRE
+12 -> Action.LEFTFIRE
+13 -> Action.DOWNFIRE
+14 -> Action.UPRIGHTFIRE
+15 -> Action.UPLEFTFIRE
+16 -> Action.DOWNRIGHTFIRE
+17 -> Action.DOWNLEFTFIRE
+---------------------------------------
+Action.NOOP #no operation - K
+Action.FIRE - K
+Action.UP - 3K
+Action.RIGHT - K
+Action.LEFT - K
+Action.DOWN - 3K
+(Action.UPFIRE
 Action.RIGHTFIRE
 Action.LEFTFIRE
 Action.DOWNFIRE
-Action.UPRIGHTFIRE
-Action.UPLEFTFIRE
-Action.DOWNRIGHTFIRE
-Action.DOWNLEFTFIRE
+)

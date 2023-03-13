@@ -9,9 +9,16 @@ import time
 
 def greedy_policy(Q, epsilon, num_actions):
     def policy_function(state):
+        #sunt 6 actiuni cu posibilitati - 2K, K, 2K, k, K, 2K
+        #num_actions = 6
+        K = epsilon / (num_actions + 4)
         action_probabilities = np.ones(num_actions,
-                                       dtype=float) * epsilon / num_actions
-        print(action_probabilities)# suma lor e 1 acuma, ca inainte nu era
+                                       dtype=float) * K
+        action_probabilities[2] = action_probabilities[5] = 3*K
+        #print(action_probabilities)# suma lor e 1 acuma, ca inainte nu era
+        #if sum(action_probabilities) > 1:
+        #    action_probabilities[0] -= sum(action_probabilities) - 1
+        #print(sum(action_probabilities))
         best_action = np.argmax(Q[state])
         action_probabilities[best_action] += (1.0 - epsilon)
         return action_probabilities
@@ -19,12 +26,14 @@ def greedy_policy(Q, epsilon, num_actions):
     return policy_function
 
 
-def q_learning(env, num_episodes, discount_factor=1.0, alpha=0.6, epsilon=0.1) -> defaultdict:
+def q_learning(env, num_episodes, discount_factor=1.7, alpha=0.75, epsilon=0.1) -> defaultdict:
+
     temporar_legal_actions = env.getLegalActionSet()
-    legal_actions = temporar_legal_actions[0:6] + temporar_legal_actions[10:13]
-    print(legal_actions)
+    #print(temporar_legal_actions)
+    legal_actions = temporar_legal_actions[0:6]
+    #print(legal_actions)
     num_actions = len(legal_actions)
-    a = input()
+    
     #with open("actiuni.txt", 'w') as f:
     #    for i in legal_actions:
     #        f.write(str(i) + '\n')
@@ -33,20 +42,20 @@ def q_learning(env, num_episodes, discount_factor=1.0, alpha=0.6, epsilon=0.1) -
     # Create an epsilon greedy policy function appropriately for environment action space. For every episode:
     policy = greedy_policy(Q, epsilon, num_actions)
     for _ in range(num_episodes):
-
         env.reset_game()
 
         state = hash(env.getScreen().tobytes())
+
         x, y = len(env.getScreen()), len(env.getScreen()[0])
 
         for _ in itertools.count():
+            #print("state = ", state)
             action_probabilities = policy(state)
             action = np.random.choice(np.arange(
                 len(action_probabilities)),
                 p=action_probabilities)
 
             reward = env.act(action)
-
             next_state = hash(env.getScreen().tobytes())
 
             # TD Update
@@ -82,5 +91,5 @@ if __name__ == "__main__":
             ale.setMode(mode)
             ale.reset_game()
             print(f"Mode {mode} difficulty {diff}:")
-            a = q_learning(ale, 1000)
+            a = q_learning(ale, 10)
             print("Q=", a)
