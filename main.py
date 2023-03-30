@@ -44,8 +44,97 @@ def check_is_me(sc:np.ndarray, x:int, y:int)->bool:
         return False
     return True
 
+def is_tile(matrix, start_i, start_j):
+    return (matrix[start_i][start_j] == matrix[start_i+1][start_j]) and (matrix[start_i][start_j] != matrix[start_i+2][start_j])
 
-def q_learning(env, num_episodes, discount_factor=1.7, alpha=0.75, epsilon=0.1) -> defaultdict:
+
+def is_terrain(matrix, start_i, start_j):
+    return not matrix[start_i][start_j] in [132, 96]
+
+
+def is_me(matrix, start_i, start_j):
+    return (matrix[start_i][start_j] == 142) and (not is_tile(matrix, start_i, start_j)) and (not is_terrain(matrix, start_i, start_j))
+
+
+def map_state(matrix, culoare=142):
+    num_rows = len(matrix)
+    num_cols = len(matrix[0])
+    my_i = None
+    my_j = None
+    for i in range(0, 174):
+        for j in range(0, num_cols):
+            if is_me(matrix, i, j):
+                my_i, my_j = i, j
+                break
+        if my_i != None and my_j != None:
+            break
+    if my_i == None:
+        return (0, 0, 0, 0, 0, 0)
+    enemy_i = None
+    enemy_j = None
+    tile_i = None
+    tile_j = None
+    for i in range(0, num_rows):
+        if enemy_i != None and tile_i != None:
+            return [my_i, my_j, enemy_i, enemy_j, tile_i, tile_j]
+
+        current_i = my_i-i
+        if current_i > 0:
+            for j in range(0, num_cols):
+                #la dreapta
+                current_j = my_j+j
+                if current_j > 0 and current_j < num_cols:
+                    i_tile = is_tile(matrix, current_i, current_j)
+                    i_terrain = is_terrain(matrix, current_i, current_j)
+                    if tile_i == None:
+                        if i_tile:
+                            tile_i, tile_j = current_i, current_j
+                    if enemy_i == None:
+                        if not i_tile and not i_terrain:
+                            if matrix[current_i][current_j] != 142:
+                                enemy_i, enemy_j = current_i, current_j
+                #la stanga
+                current_j = my_j-j
+                if current_j > 0 and current_j < num_cols:
+                    i_tile = is_tile(matrix, current_i, current_j)
+                    i_terrain = is_terrain(matrix, current_i, current_j)
+                    if tile_i == None:
+                        if i_tile:
+                            tile_i, tile_j = current_i, current_j
+                    if enemy_i == None:
+                        if not i_tile and not i_terrain:
+                            if matrix[current_i][current_j] != 142:
+                                enemy_i, enemy_j = current_i, current_j
+
+        current_i = my_i + i
+        if current_i < num_rows:
+            for j in range(0, num_cols):
+                # la dreapta
+                current_j = my_j+j
+                if current_j > 0 and current_j < num_cols:
+                    i_tile = is_tile(matrix, current_i, current_j)
+                    i_terrain = is_terrain(matrix, current_i, current_j)
+                    if tile_i == None:
+                        if i_tile:
+                            tile_i, tile_j = current_i, current_j
+                    if enemy_i == None:
+                        if not i_tile and not i_terrain:
+                            if matrix[current_i][current_j] != 142:
+                                enemy_i, enemy_j = current_i, current_j
+                # la stanga
+                current_j = my_j-j
+                if current_j > 0 and current_j < num_cols:
+                    i_tile = is_tile(matrix, current_i, current_j)
+                    i_terrain = is_terrain(matrix, current_i, current_j)
+                    if tile_i == None:
+                        if i_tile:
+                            tile_i, tile_j = current_i, current_j
+                    if enemy_i == None:
+                        if not i_tile and not i_terrain:
+                            if matrix[current_i][current_j] != 142:
+                                enemy_i, enemy_j = current_i, current_j
+
+def q_learning(env, num_episodes, discount_factor=1.7, alpha=1.75, epsilon=0.1) -> defaultdict:
     temporar_legal_actions = env.getLegalActionSet()
     legal_actions = temporar_legal_actions[0:6]
     num_actions = len(legal_actions)
@@ -56,33 +145,35 @@ def q_learning(env, num_episodes, discount_factor=1.7, alpha=0.75, epsilon=0.1) 
     for _ in range(num_episodes):
         env.reset_game()
         
-        state = hash(env.getScreen().tobytes())
-        pixels = np.where(env.getScreen()==142)
-        np.transpose(pixels)
-        me = [ [pixels[0][i], pixels[1][i]] for i in range(len(pixels[0])) if check_is_me(env.getScreen(), pixels[0][i], pixels[1][i])]
-        print(me)
+        #state = hash(env.getScreen())
+        #pixels = np.where(env.getScreen()==142)
+        #np.transpose(pixels)
+        #me = [ [pixels[0][i], pixels[1][i]] for i in range(len(pixels[0])) if check_is_me(env.getScreen(), pixels[0][i], pixels[1][i])]
+        #print(me)
+        mapped_state = map_state(env.getScreen())
+        s = hash(mapped_state)
         for _ in itertools.count():
-            action_probabilities = policy(state)
+            action_probabilities = policy(s)
             action = np.random.choice(np.arange(
                 len(action_probabilities)),
                 p=action_probabilities)
 
 
             reward = env.act(action)
-            next_state = hash(env.getScreen().tobytes())
+            next_state = hash(map_state(env.getScreen()))
 
             # TD Update
             best_next_action = np.argmax(Q[next_state])
             td_target = reward + discount_factor * Q[next_state][best_next_action]
-            td_delta = td_target - Q[state][action]
-            Q[state][action] += alpha * td_delta
+            td_delta = td_target - Q[s][action]
+            Q[s][action] += alpha * td_delta
 
             if env.game_over():
                 #ale.saveScreenPNG("E:\code\MLSA\AI\ATARI\ss-again.png")
                 #with open("actiuni.txt", 'w') as f:
                 #    f.write(str(env.getScreen()))
                 break
-            state = next_state
+            s = next_state
     return Q
 
 
@@ -101,8 +192,8 @@ if __name__ == "__main__":
     modes = ale.getAvailableModes()
     diffs = ale.getAvailableDifficulties()
 
-    for mode in modes[0:1]:
-        for diff in diffs[0:1]:
+    for mode in modes:
+        for diff in diffs:
             ale.setDifficulty(diff)
             ale.setMode(mode)
             ale.reset_game()
