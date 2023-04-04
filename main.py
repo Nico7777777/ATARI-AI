@@ -55,6 +55,53 @@ def is_terrain(matrix, start_i, start_j):
 def is_me(matrix, start_i, start_j):
     return (matrix[start_i][start_j] == 142) and (not is_tile(matrix, start_i, start_j)) and (not is_terrain(matrix, start_i, start_j))
 
+def map_state_2(matrix, culoare=142):
+    num_cols = len(matrix[0])
+    my_i = None
+    my_j = None
+    for i in range(0, 174):
+        for j in range(0, num_cols):
+            if is_me(matrix, i, j):
+                my_i, my_j = i, j
+                break
+        if my_i != None and my_j != None:
+            break
+    if my_i == None:
+        return (0, 0, 0, 0, 0, 0)
+    enemy_i = None
+    enemy_j = None
+    tile_i = None
+    tile_j = None
+    radius = 5
+    while enemy_i == None and title_i == None:
+        #return format:
+        #(my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+        radius += 1
+        i, j = my_i - radius, my_j
+        for _ in range(radius+1):
+            if i > 0 and i < 174 and j > 0 and j < num_cols:
+                if not is_tile(matrix, i, j) and not is_terrain(matrix, i, j):
+                    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+            i += 1
+            j -= 1
+        for _ in range(radius+1):
+            if i > 0 and i < 174 and j > 0 and j < num_cols:
+                if not is_tile(matrix, i, j) and not is_terrain(matrix, i, j):
+                    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+            i += 1
+            j += 1
+        for _ in range(radius+1):
+            if i > 0 and i < 174 and j > 0 and j < num_cols:
+                if not is_tile(matrix, i, j) and not is_terrain(matrix, i, j):
+                    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+            i -= 1
+            j += 1
+        for _ in range(radius+1):
+            if i > 0 and i < 174 and j > 0 and j < num_cols:
+                if not is_tile(matrix, i, j) and not is_terrain(matrix, i, j):
+                    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+            i -= 1
+            j -= 1
 
 def map_state(matrix, culoare=142):
     num_rows = len(matrix)
@@ -76,7 +123,7 @@ def map_state(matrix, culoare=142):
     tile_j = None
     for i in range(0, num_rows):
         if enemy_i != None and tile_i != None:
-            return [my_i, my_j, enemy_i, enemy_j, tile_i, tile_j]
+            return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
 
         current_i = my_i-i
         if current_i > 0:
@@ -106,6 +153,7 @@ def map_state(matrix, culoare=142):
                             if matrix[current_i][current_j] != 142:
                                 enemy_i, enemy_j = current_i, current_j
 
+
         current_i = my_i + i
         if current_i < num_rows:
             for j in range(0, num_cols):
@@ -133,8 +181,9 @@ def map_state(matrix, culoare=142):
                         if not i_tile and not i_terrain:
                             if matrix[current_i][current_j] != 142:
                                 enemy_i, enemy_j = current_i, current_j
+    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
 
-def q_learning(env, num_episodes, discount_factor=1.7, alpha=1.75, epsilon=0.1) -> defaultdict:
+def q_learning(env, num_episodes, discount_factor=1.7, alpha=0.8, epsilon=0.1) -> defaultdict:
     temporar_legal_actions = env.getLegalActionSet()
     legal_actions = temporar_legal_actions[0:6]
     num_actions = len(legal_actions)
@@ -150,7 +199,7 @@ def q_learning(env, num_episodes, discount_factor=1.7, alpha=1.75, epsilon=0.1) 
         #np.transpose(pixels)
         #me = [ [pixels[0][i], pixels[1][i]] for i in range(len(pixels[0])) if check_is_me(env.getScreen(), pixels[0][i], pixels[1][i])]
         #print(me)
-        mapped_state = map_state(env.getScreen())
+        mapped_state = map_state_2(env.getScreen())
         s = hash(mapped_state)
         for _ in itertools.count():
             action_probabilities = policy(s)
@@ -166,6 +215,7 @@ def q_learning(env, num_episodes, discount_factor=1.7, alpha=1.75, epsilon=0.1) 
             best_next_action = np.argmax(Q[next_state])
             td_target = reward + discount_factor * Q[next_state][best_next_action]
             td_delta = td_target - Q[s][action]
+            print(alpha * td_delta)
             Q[s][action] += alpha * td_delta
 
             if env.game_over():
