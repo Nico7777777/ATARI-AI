@@ -80,28 +80,45 @@ def map_state_2(matrix, culoare=142):
         i, j = my_i - radius, my_j
         for _ in range(radius+1):
             if i > 0 and i < 174 and j > 0 and j < num_cols:
-                if not is_tile(matrix, i, j) and not is_terrain(matrix, i, j):
-                    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+                if is_tile(matrix, i, j) and tile_i == None:
+                    tile_i, tile_j = i, j
+                else:
+                    if not is_terrain(matrix, i, j) and matrix[i][j] != culoare and enemy_i == None:
+                        enemy_i, enemy_j = i, j
             i += 1
             j -= 1
         for _ in range(radius+1):
             if i > 0 and i < 174 and j > 0 and j < num_cols:
-                if not is_tile(matrix, i, j) and not is_terrain(matrix, i, j):
-                    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+                if is_tile(matrix, i, j) and tile_i == None:
+                    tile_i, tile_j = i, j
+                else:
+                    if not is_terrain(matrix, i, j) and matrix[i][j] != culoare and enemy_i == None:
+                        enemy_i, enemy_j = i, j
             i += 1
             j += 1
         for _ in range(radius+1):
             if i > 0 and i < 174 and j > 0 and j < num_cols:
-                if not is_tile(matrix, i, j) and not is_terrain(matrix, i, j):
-                    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+                if is_tile(matrix, i, j) and tile_i == None:
+                    tile_i, tile_j = i, j
+                else:
+                    if not is_terrain(matrix, i, j) and matrix[i][j] != culoare and enemy_i == None:
+                        enemy_i, enemy_j = i, j
             i -= 1
             j += 1
         for _ in range(radius+1):
             if i > 0 and i < 174 and j > 0 and j < num_cols:
-                if not is_tile(matrix, i, j) and not is_terrain(matrix, i, j):
-                    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+                if is_tile(matrix, i, j) and tile_i == None:
+                    tile_i, tile_j = i, j
+                else:
+                    if not is_terrain(matrix, i, j) and matrix[i][j] != culoare and enemy_i == None:
+                        enemy_i, enemy_j = i, j
             i -= 1
             j -= 1
+    if enemy_i != None and tile_i != None:
+        return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+    else:
+        return (0, 0, 0, 0, 0, 0)
+
 
 def map_state(matrix, culoare=142):
     num_rows = len(matrix)
@@ -181,13 +198,16 @@ def map_state(matrix, culoare=142):
                         if not i_tile and not i_terrain:
                             if matrix[current_i][current_j] != 142:
                                 enemy_i, enemy_j = current_i, current_j
-    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+    #if enemy_i != None and tile_i != None:
+    #    return (my_i, my_j, enemy_i, enemy_j, tile_i, tile_j)
+    #else:
+    #    return (0, 0, 0, 0, 0, 0)
 
-def q_learning(env, num_episodes, discount_factor=1.7, alpha=0.8, epsilon=0.1) -> defaultdict:
+def q_learning(env, num_episodes, discount_factor=1.0, alpha=0.8, epsilon=0.1, Q = None) -> defaultdict:
     temporar_legal_actions = env.getLegalActionSet()
     legal_actions = temporar_legal_actions[0:6]
     num_actions = len(legal_actions)
-    Q = defaultdict(lambda: np.zeros(num_actions))
+    Q = defaultdict(lambda: np.zeros(num_actions)) if Q == None else Q
 
     # Create an epsilon greedy policy function appropriately for environment action space. For every episode:
     policy = greedy_policy(Q, epsilon, num_actions)
@@ -209,13 +229,13 @@ def q_learning(env, num_episodes, discount_factor=1.7, alpha=0.8, epsilon=0.1) -
 
 
             reward = env.act(action)
-            next_state = hash(map_state(env.getScreen()))
+            next_state = hash(map_state_2(env.getScreen()))
 
             # TD Update
             best_next_action = np.argmax(Q[next_state])
             td_target = reward + discount_factor * Q[next_state][best_next_action]
             td_delta = td_target - Q[s][action]
-            print(alpha * td_delta)
+            #print(alpha * td_delta)
             Q[s][action] += alpha * td_delta
 
             if env.game_over():
@@ -228,25 +248,47 @@ def q_learning(env, num_episodes, discount_factor=1.7, alpha=0.8, epsilon=0.1) -
 
 
 if __name__ == "__main__":
+    a = None
+    try:
+        with open("qlearn.np", "rb") as f:
+            a = np.load(f)
+    except:
+        a = None
+    with open("qlearn.np", "wb") as f:
+        np.save(f, a)
     random.seed(time.time())
     ale = ALEInterface()
     ale.setInt("random_seed", random.randint(1, 1000000000))
     ale.setFloat("repeat_action_probability", 0.37)  # ca cine stie, se mai intampla chestii repetitive
     ale.loadROM(Alien)
 
-    if SDL_SUPPORT:
-        ale.setBool("sound", True)
-        ale.setBool("display_screen", True)
 
     ale.loadROM(Alien)  # -- aici chiar se porneste jocul
     modes = ale.getAvailableModes()
     diffs = ale.getAvailableDifficulties()
 
-    for mode in modes:
-        for diff in diffs:
-            ale.setDifficulty(diff)
-            ale.setMode(mode)
-            ale.reset_game()
-            #print(f"Mode {mode} difficulty {diff}:")
-            a = q_learning(ale, 1)
 
+    #for mode in modes:
+    #    for diff in diffs:
+    mode = modes[0]
+    diff = diffs[0]
+    ale.setDifficulty(diff)
+    ale.setMode(mode)
+    ale.reset_game()
+    #print(f"Mode {mode} difficulty {diff}:")
+    a = q_learning(ale, 1)
+
+    if SDL_SUPPORT:
+        ale.setBool("sound", True)
+        ale.setBool("display_screen", True)
+
+    ale.setDifficulty(diff)
+    ale.setMode(mode)
+    ale.reset_game()
+
+    with open("qlearn.np", "wb") as f:
+        np.save(f, a)
+    # print(f"Mode {mode} difficulty {diff}:")
+    a = q_learning(ale, 1, Q=a)
+    with open("qlearn.np", "wb") as f:
+        np.save(f, a)
