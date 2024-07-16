@@ -252,6 +252,9 @@ class QL:
         self.ale.setInt("random_seed", random.randint(1, 1000000000))
         # ca cine stie, se mai intampla chestii repetitive
         self.ale.setFloat("repeat_action_probability", 0.37)
+        self.ale.setBool("color_averaging", True)
+        self.ale.setBool("display_screen", True)
+        self.ale.setBool("sound", True)
         self.ale.loadROM(Alien)
 
         self.ale.loadROM(Alien)  # -- aici chiar se porneste jocul
@@ -265,6 +268,9 @@ class QL:
         diff = diffs[0]
         self.ale.setDifficulty(diff)
         self.ale.setMode(mode)
+        
+        self.ale.setBool("sound", True)
+        self.ale.setBool("display_screen", True)
         self.ale.reset_game()
         a.pical = a.q_learning(self.ale, 1)
 
