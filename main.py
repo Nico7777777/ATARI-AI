@@ -1,13 +1,12 @@
-# https://jair.org/index.php/jair/article/view/10819
 from ale_py import ALEInterface, SDL_SUPPORT
 import collections #import defaultdict
-from ale_py.roms import Breakout
+from ale_py.roms import Alien
 import numpy as np
 import itertools
 import pickle
 import random
 import time
-# import dill
+import dill
 import sys
 np.set_printoptions(threshold=sys.maxsize, linewidth=1000)
 
@@ -38,11 +37,7 @@ def greedy_policy(Q, epsilon, num_actions):
         action_probabilities[2] = action_probabilities[5] = 3*K
         # print(sum(action_probabilities))
         best_action = Q[state].argmax(axis=0)
-        print(f'num_actions = {num_actions}')
-        print(f'Q[state] = {Q[state]}')
-        print(f'best_action = {best_action}')
-        print('-------------------------------')
-        action_probabilities[int(best_action)] += (1.0 - epsilon)
+        action_probabilities[best_action] += (1.0 - epsilon)
         return action_probabilities
 
     return policy_function
@@ -91,7 +86,7 @@ class QL:
             radius += 1
             i, j = my_i - radius, my_j
             for _ in range(radius+1):
-                if 0 < i < 174 and 0 < j < num_cols:
+                if i > 0 and i < 174 and j > 0 and j < num_cols:
                     if self.is_tile(matrix, i, j) and tile_i == None:
                         tile_i, tile_j = i, j
                     else:
@@ -100,7 +95,7 @@ class QL:
                 i += 1
                 j -= 1
             for _ in range(radius+1):
-                if 0 < i < 174 and 0 < j < num_cols:
+                if i > 0 and i < 174 and j > 0 and j < num_cols:
                     if self.is_tile(matrix, i, j) and tile_i == None:
                         tile_i, tile_j = i, j
                     else:
@@ -109,7 +104,7 @@ class QL:
                 i += 1
                 j += 1
             for _ in range(radius+1):
-                if 0 < i < 174 and 0 < j < num_cols:
+                if i > 0 and i < 174 and j > 0 and j < num_cols:
                     if self.is_tile(matrix, i, j) and tile_i == None:
                         tile_i, tile_j = i, j
                     else:
@@ -118,7 +113,7 @@ class QL:
                 i -= 1
                 j += 1
             for _ in range(radius+1):
-                if 0 < i < 174 and 0 < j < num_cols:
+                if i > 0 and i < 174 and j > 0 and j < num_cols:
                     if self.is_tile(matrix, i, j) and tile_i == None:
                         tile_i, tile_j = i, j
                     else:
@@ -257,9 +252,9 @@ class QL:
         self.ale.setInt("random_seed", random.randint(1, 1000000000))
         # ca cine stie, se mai intampla chestii repetitive
         self.ale.setFloat("repeat_action_probability", 0.37)
-        self.ale.loadROM(Breakout)
+        self.ale.loadROM(Alien)
 
-        self.ale.loadROM(Breakout)  # -- aici chiar se porneste jocul
+        self.ale.loadROM(Alien)  # -- aici chiar se porneste jocul
         modes = self.ale.getAvailableModes()
         diffs = self.ale.getAvailableDifficulties()
         # ---------------------------------------------------------------------------------------------------------------
@@ -271,22 +266,15 @@ class QL:
         self.ale.setDifficulty(diff)
         self.ale.setMode(mode)
         self.ale.reset_game()
+        a.pical = a.q_learning(self.ale, 1)
 
         if SDL_SUPPORT:
-            print('AVEM SDL_SUPPORT')
-            if not self.ale.setBool(b'sound', True):
-                print("Failed to enable sound")
-            if not self.ale.setBool(b'display_screen', True):
-                print("Failed to enable display screen")
-        else:
-            print('NU AVEM SDL_SUPPORT')
+            self.ale.setBool("sound", True)
+            self.ale.setBool("display_screen", True)
 
         self.ale.setDifficulty(diff)
         self.ale.setMode(mode)
         self.ale.reset_game()
-
-        a.pical = a.q_learning(self.ale, 1)
-        time.sleep(5)
 
 
 if __name__ == "__main__":
@@ -302,7 +290,6 @@ if __name__ == "__main__":
     #with open("qlearn.np", "wb") as f:
     #    pickle.dump(f, a, protocol=pickle.HIGHEST_PROTOCOL)
     # print(f"Mode {mode} difficulty {diff}:")
-
-    # a.pical = a.q_learning(a.ale, 1c, Q=a.pical)
-    # with open("qlearn.pickle", "wb") as f:
-    #     pickle.dump(a.pical, f, protocol=pickle.HIGHEST_PROTOCOL)
+    a.pical = a.q_learning(a.ale, 1, Q=a)
+    with open("qlearn.pickle", "wb") as f:
+        pickle.dump(a.pical, f, protocol=pickle.HIGHEST_PROTOCOL)
